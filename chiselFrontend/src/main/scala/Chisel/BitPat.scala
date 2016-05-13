@@ -4,7 +4,6 @@ package Chisel
 
 import scala.language.experimental.macros
 
-import Chisel._
 import Chisel.internal.sourceinfo.{SourceInfo, SourceInfoTransform}
 
 object BitPat {
