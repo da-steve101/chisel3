@@ -150,24 +150,24 @@ abstract class Definition extends Command {
   def id: HasId
   def name: String = id.getRef.name
 }
-case class DefPrim[T <: Data](val sourceInfo: SourceInfo, id: T, op: PrimOp, args: Arg*) extends Definition
-case class DefInvalid(val sourceInfo: SourceInfo, arg: Arg) extends Command
-case class DefWire(val sourceInfo: SourceInfo, id: Data) extends Definition
-case class DefReg(val sourceInfo: SourceInfo, id: Data, clock: Arg) extends Definition
-case class DefRegInit(val sourceInfo: SourceInfo, id: Data, clock: Arg, reset: Arg, init: Arg) extends Definition
-case class DefMemory(val sourceInfo: SourceInfo, id: HasId, t: Data, size: Int) extends Definition
-case class DefSeqMemory(val sourceInfo: SourceInfo, id: HasId, t: Data, size: Int) extends Definition
-case class DefMemPort[T <: Data](val sourceInfo: SourceInfo, id: T, source: Node, dir: MemPortDirection, index: Arg, clock: Arg) extends Definition
-case class DefInstance(val sourceInfo: SourceInfo, id: Module, ports: Seq[Port]) extends Definition
-case class WhenBegin(val sourceInfo: SourceInfo, pred: Arg) extends Command
-case class WhenEnd(val sourceInfo: SourceInfo) extends Command
-case class Connect(val sourceInfo: SourceInfo, loc: Node, exp: Arg) extends Command
-case class BulkConnect(val sourceInfo: SourceInfo, loc1: Node, loc2: Node) extends Command
-case class ConnectInit(val sourceInfo: SourceInfo, loc: Node, exp: Arg) extends Command
-case class Stop(val sourceInfo: SourceInfo, clk: Arg, ret: Int) extends Command
+case class DefPrim[T <: Data](sourceInfo: SourceInfo, id: T, op: PrimOp, args: Arg*) extends Definition
+case class DefInvalid(sourceInfo: SourceInfo, arg: Arg) extends Command
+case class DefWire(sourceInfo: SourceInfo, id: Data) extends Definition
+case class DefReg(sourceInfo: SourceInfo, id: Data, clock: Arg) extends Definition
+case class DefRegInit(sourceInfo: SourceInfo, id: Data, clock: Arg, reset: Arg, init: Arg) extends Definition
+case class DefMemory(sourceInfo: SourceInfo, id: HasId, t: Data, size: Int) extends Definition
+case class DefSeqMemory(sourceInfo: SourceInfo, id: HasId, t: Data, size: Int) extends Definition
+case class DefMemPort[T <: Data](sourceInfo: SourceInfo, id: T, source: Node, dir: MemPortDirection, index: Arg, clock: Arg) extends Definition
+case class DefInstance(sourceInfo: SourceInfo, id: Module, ports: Seq[Port]) extends Definition
+case class WhenBegin(sourceInfo: SourceInfo, pred: Arg) extends Command
+case class WhenEnd(sourceInfo: SourceInfo) extends Command
+case class Connect(sourceInfo: SourceInfo, loc: Node, exp: Arg) extends Command
+case class BulkConnect(sourceInfo: SourceInfo, loc1: Node, loc2: Node) extends Command
+case class ConnectInit(sourceInfo: SourceInfo, loc: Node, exp: Arg) extends Command
+case class Stop(sourceInfo: SourceInfo, clk: Arg, ret: Int) extends Command
 case class Component(id: Module, name: String, ports: Seq[Port], commands: Seq[Command]) extends Arg
 case class Port(id: Data, dir: Direction)
-case class Printf(val sourceInfo: SourceInfo, clk: Arg, formatIn: String, ids: Seq[Arg]) extends Command {
+case class Printf(sourceInfo: SourceInfo, clk: Arg, formatIn: String, ids: Seq[Arg]) extends Command {
   require(formatIn.forall(c => c.toInt > 0 && c.toInt < 128), "format strings must comprise non-null ASCII values")
   def format: String = {
     def escaped(x: Char) = {
