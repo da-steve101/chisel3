@@ -21,9 +21,6 @@ abstract class BlackBox extends Module {
   // TODO: actually implement this.
   def setVerilogParameters(s: String): Unit = {}
 
-  // Require Bundles specifically in BlackBox, since a mapping of names to Data is needed.
-  override def io: Bundle
-
   // The body of a BlackBox is empty, the real logic happens in firrtl/Emitter.scala
   // Bypass standard clock, reset, io port declaration by flattening io
   // TODO(twigg): ? Really, overrides are bad, should extend BaseModule....
