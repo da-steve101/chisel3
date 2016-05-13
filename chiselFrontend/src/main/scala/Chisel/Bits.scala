@@ -20,6 +20,8 @@ abstract class Element(dirArg: Direction, val width: Width) extends Data(dirArg)
   */
 sealed abstract class Bits(dirArg: Direction, width: Width, override val litArg: Option[LitArg])
     extends Element(dirArg, width) {
+  type Self <: Bits
+
   // TODO: perhaps make this concrete?
   // Arguments for: self-checking code (can't do arithmetic on bits)
   // Arguments against: generates down to a FIRRTL UInt anyways
@@ -32,8 +34,8 @@ sealed abstract class Bits(dirArg: Direction, width: Width, override val litArg:
 
   override def <> (that: Data)(implicit sourceInfo: SourceInfo): Unit = this := that
 
-  def tail(n: Int): UInt = macro SourceInfoTransform.nArg
-  def head(n: Int): UInt = macro SourceInfoTransform.nArg
+  final def tail(n: Int): UInt = macro SourceInfoTransform.nArg
+  final def head(n: Int): UInt = macro SourceInfoTransform.nArg
 
   def do_tail(n: Int)(implicit sourceInfo: SourceInfo): UInt = {
     val w = width match {
@@ -133,63 +135,69 @@ sealed abstract class Bits(dirArg: Direction, width: Width, override val litArg:
     *
     * @note for SInts only, this does sign extension
     */
-  def pad(that: Int): this.type = macro SourceInfoTransform.thatArg
+  final def pad(that: Int): Self = macro SourceInfoTransform.thatArg
 
-  def do_pad(that: Int)(implicit sourceInfo: SourceInfo): this.type =
-    binop(sourceInfo, cloneTypeWidth(this.width max Width(that)), PadOp, that)
+  def do_pad(that: Int)(implicit sourceInfo: SourceInfo): Self =
+    binop(sourceInfo, cloneTypeWidth(this.width max Width(that)), PadOp, that).asInstanceOf[Self]
+
+  /** Returns this wire bitwise-inverted. */
+  final def unary_~ (): Self = macro SourceInfoTransform.noArg
+
+  def do_unary_~ (implicit sourceInfo: SourceInfo): Self
+
 
   /** Shift left operation */
   // REVIEW TODO: redundant
   // REVIEW TODO: should these return this.type or Bits?
-  def << (that: BigInt): Bits = macro SourceInfoTransform.thatArg
+  final def << (that: BigInt): Self = macro SourceInfoTransform.thatArg
 
-  def do_<< (that: BigInt)(implicit sourceInfo: SourceInfo): Bits
+  def do_<< (that: BigInt)(implicit sourceInfo: SourceInfo): Self
 
   /** Returns this wire statically left shifted by the specified amount,
     * inserting zeros into the least significant bits.
     *
     * The width of the output is `other` larger than the input.
     */
-  def << (that: Int): Bits = macro SourceInfoTransform.thatArg
+  final def << (that: Int): Self = macro SourceInfoTransform.thatArg
 
-  def do_<< (that: Int)(implicit sourceInfo: SourceInfo): Bits
+  def do_<< (that: Int)(implicit sourceInfo: SourceInfo): Self
 
   /** Returns this wire dynamically left shifted by the specified amount,
     * inserting zeros into the least significant bits.
     *
     * The width of the output is `pow(2, width(other))` larger than the input.
     */
-  def << (that: UInt): Bits = macro SourceInfoTransform.thatArg
+  final def << (that: UInt): Self = macro SourceInfoTransform.thatArg
 
-  def do_<< (that: UInt)(implicit sourceInfo: SourceInfo): Bits
+  def do_<< (that: UInt)(implicit sourceInfo: SourceInfo): Self
 
   /** Shift right operation */
   // REVIEW TODO: redundant
-  def >> (that: BigInt): Bits = macro SourceInfoTransform.thatArg
+  final def >> (that: BigInt): Self = macro SourceInfoTransform.thatArg
 
-  def do_>> (that: BigInt)(implicit sourceInfo: SourceInfo): Bits
+  def do_>> (that: BigInt)(implicit sourceInfo: SourceInfo): Self
 
   /** Returns this wire statically right shifted by the specified amount,
     * inserting zeros into the most significant bits.
     *
     * The width of the output is the same as the input.
     */
-  def >> (that: Int): Bits = macro SourceInfoTransform.thatArg
+  final def >> (that: Int): Self = macro SourceInfoTransform.thatArg
 
-  def do_>> (that: Int)(implicit sourceInfo: SourceInfo): Bits
+  def do_>> (that: Int)(implicit sourceInfo: SourceInfo): Self
 
   /** Returns this wire dynamically right shifted by the specified amount,
     * inserting zeros into the most significant bits.
     *
     * The width of the output is the same as the input.
     */
-  def >> (that: UInt): Bits = macro SourceInfoTransform.thatArg
+  final def >> (that: UInt): Self = macro SourceInfoTransform.thatArg
 
-  def do_>> (that: UInt)(implicit sourceInfo: SourceInfo): Bits
+  def do_>> (that: UInt)(implicit sourceInfo: SourceInfo): Self
 
   /** Returns the contents of this wire as a [[Vec]] of [[Bool]]s.
     */
-  def toBools(): Seq[Bool] = macro SourceInfoTransform.noArg
+  final def toBools(): Seq[Bool] = macro SourceInfoTransform.noArg
 
   def toBools(implicit sourceInfo: SourceInfo): Seq[Bool] =
     Seq.tabulate(this.getWidth)(i => this(i))
@@ -222,7 +230,7 @@ sealed abstract class Bits(dirArg: Direction, width: Width, override val litArg:
   @deprecated("Use asUInt, which makes the reinterpret cast more explicit", "chisel3")
   final def toUInt(): UInt = do_asUInt(DeprecatedSourceInfo)
 
-  def toBool(): Bool = macro SourceInfoTransform.noArg
+  final def toBool(): Bool = macro SourceInfoTransform.noArg
 
   def do_toBool(implicit sourceInfo: SourceInfo): Bool = {
     width match {
@@ -236,7 +244,7 @@ sealed abstract class Bits(dirArg: Direction, width: Width, override val litArg:
     *
     * The width of the output is sum of the inputs.
     */
-  def ## (that: Bits): UInt = macro SourceInfoTransform.thatArg
+  final def ## (that: Bits): UInt = macro SourceInfoTransform.thatArg
 
   def do_## (that: Bits)(implicit sourceInfo: SourceInfo): UInt = {
     val w = this.width + that.width
@@ -272,7 +280,7 @@ abstract trait Num[T <: Data] {
   /** Outputs the sum of `this` and `b`. The resulting width is the max of the
     * operands plus 1 (should not overflow).
     */
-  def + (that: T): T = macro SourceInfoTransform.thatArg
+  final def + (that: T): T = macro SourceInfoTransform.thatArg
 
   def do_+ (that: T)(implicit sourceInfo: SourceInfo): T
 
@@ -282,7 +290,7 @@ abstract trait Num[T <: Data] {
     * @note can generate a single-cycle multiplier, which can result in
     * significant cycle time and area costs
     */
-  def * (that: T): T = macro SourceInfoTransform.thatArg
+  final def * (that: T): T = macro SourceInfoTransform.thatArg
 
   def do_* (that: T)(implicit sourceInfo: SourceInfo): T
 
@@ -290,49 +298,49 @@ abstract trait Num[T <: Data] {
     *
     * TODO: full rules
     */
-  def / (that: T): T = macro SourceInfoTransform.thatArg
+  final def / (that: T): T = macro SourceInfoTransform.thatArg
 
   def do_/ (that: T)(implicit sourceInfo: SourceInfo): T
 
-  def % (that: T): T = macro SourceInfoTransform.thatArg
+  final def % (that: T): T = macro SourceInfoTransform.thatArg
 
   def do_% (that: T)(implicit sourceInfo: SourceInfo): T
 
   /** Outputs the difference of `this` and `b`. The resulting width is the max
    *  of the operands plus 1 (should not overflow).
     */
-  def - (that: T): T = macro SourceInfoTransform.thatArg
+  final def - (that: T): T = macro SourceInfoTransform.thatArg
 
   def do_- (that: T)(implicit sourceInfo: SourceInfo): T
 
   /** Outputs true if `this` < `b`.
     */
-  def < (that: T): Bool = macro SourceInfoTransform.thatArg
+  final def < (that: T): Bool = macro SourceInfoTransform.thatArg
 
   def do_< (that: T)(implicit sourceInfo: SourceInfo): Bool
 
   /** Outputs true if `this` <= `b`.
     */
-  def <= (that: T): Bool = macro SourceInfoTransform.thatArg
+  final def <= (that: T): Bool = macro SourceInfoTransform.thatArg
 
   def do_<= (that: T)(implicit sourceInfo: SourceInfo): Bool
 
   /** Outputs true if `this` > `b`.
     */
-  def > (that: T): Bool = macro SourceInfoTransform.thatArg
+  final def > (that: T): Bool = macro SourceInfoTransform.thatArg
 
   def do_> (that: T)(implicit sourceInfo: SourceInfo): Bool
 
   /** Outputs true if `this` >= `b`.
     */
-  def >= (that: T): Bool = macro SourceInfoTransform.thatArg
+  final def >= (that: T): Bool = macro SourceInfoTransform.thatArg
 
   def do_>= (that: T)(implicit sourceInfo: SourceInfo): Bool
 
   /** Outputs the minimum of `this` and `b`. The resulting width is the max of
     * the operands.
     */
-  def min(that: T): T = macro SourceInfoTransform.thatArg
+  final def min(that: T): T = macro SourceInfoTransform.thatArg
 
   def do_min(that: T)(implicit sourceInfo: SourceInfo): T =
     Mux(this < that, this.asInstanceOf[T], that)
@@ -340,7 +348,7 @@ abstract trait Num[T <: Data] {
   /** Outputs the maximum of `this` and `b`. The resulting width is the max of
     * the operands.
     */
-  def max(that: T): T = macro SourceInfoTransform.thatArg
+  final def max(that: T): T = macro SourceInfoTransform.thatArg
 
   def do_max(that: T)(implicit sourceInfo: SourceInfo): T =
     Mux(this < that, that, this.asInstanceOf[T])
@@ -351,6 +359,8 @@ abstract trait Num[T <: Data] {
   */
 sealed class UInt private[Chisel] (dir: Direction, width: Width, lit: Option[ULit] = None)
     extends Bits(dir, width, lit) with Num[UInt] {
+  type Self <: UInt
+
   private[Chisel] override def cloneTypeWidth(w: Width): this.type =
     new UInt(dir, w).asInstanceOf[this.type]
   private[Chisel] def toType = s"UInt$width"
@@ -364,8 +374,8 @@ sealed class UInt private[Chisel] (dir: Direction, width: Width, lit: Option[ULi
   }
 
   // TODO: refactor to share documentation with Num or add independent scaladoc
-  def unary_- (): UInt = macro SourceInfoTransform.noArg
-  def unary_-% (): UInt = macro SourceInfoTransform.noArg
+  final def unary_- (): UInt = macro SourceInfoTransform.noArg
+  final def unary_-% (): UInt = macro SourceInfoTransform.noArg
 
   def do_unary_- (implicit sourceInfo: SourceInfo) : UInt = UInt(0) - this
   def do_unary_-% (implicit sourceInfo: SourceInfo): UInt = UInt(0) -% this
@@ -379,13 +389,13 @@ sealed class UInt private[Chisel] (dir: Direction, width: Width, lit: Option[ULi
   override def do_* (that: UInt)(implicit sourceInfo: SourceInfo): UInt =
     binop(sourceInfo, UInt(this.width + that.width), TimesOp, that)
 
-  def * (that: SInt): SInt = macro SourceInfoTransform.thatArg
+  final def * (that: SInt): SInt = macro SourceInfoTransform.thatArg
   def do_* (that: SInt)(implicit sourceInfo: SourceInfo): SInt = that * this
 
-  def +& (that: UInt): UInt = macro SourceInfoTransform.thatArg
-  def +% (that: UInt): UInt = macro SourceInfoTransform.thatArg
-  def -& (that: UInt): UInt = macro SourceInfoTransform.thatArg
-  def -% (that: UInt): UInt = macro SourceInfoTransform.thatArg
+  final def +& (that: UInt): UInt = macro SourceInfoTransform.thatArg
+  final def +% (that: UInt): UInt = macro SourceInfoTransform.thatArg
+  final def -& (that: UInt): UInt = macro SourceInfoTransform.thatArg
+  final def -% (that: UInt): UInt = macro SourceInfoTransform.thatArg
 
   def do_+& (that: UInt)(implicit sourceInfo: SourceInfo): UInt =
     binop(sourceInfo, UInt((this.width max that.width) + 1), AddOp, that)
@@ -396,9 +406,9 @@ sealed class UInt private[Chisel] (dir: Direction, width: Width, lit: Option[ULi
   def do_-% (that: UInt)(implicit sourceInfo: SourceInfo): UInt =
     (this -& that).tail(1)
 
-  def & (that: UInt): UInt = macro SourceInfoTransform.thatArg
-  def | (that: UInt): UInt = macro SourceInfoTransform.thatArg
-  def ^ (that: UInt): UInt = macro SourceInfoTransform.thatArg
+  final def & (that: UInt): UInt = macro SourceInfoTransform.thatArg
+  final def | (that: UInt): UInt = macro SourceInfoTransform.thatArg
+  final def ^ (that: UInt): UInt = macro SourceInfoTransform.thatArg
 
   def do_& (that: UInt)(implicit sourceInfo: SourceInfo): UInt =
     binop(sourceInfo, UInt(this.width max that.width), BitAndOp, that)
@@ -408,14 +418,13 @@ sealed class UInt private[Chisel] (dir: Direction, width: Width, lit: Option[ULi
     binop(sourceInfo, UInt(this.width max that.width), BitXorOp, that)
 
   /** Returns this wire bitwise-inverted. */
-  def unary_~ (): UInt = macro SourceInfoTransform.noArg
-
-  def do_unary_~ (implicit sourceInfo: SourceInfo): UInt = unop(sourceInfo, UInt(width = width), BitNotOp)
+  def do_unary_~ (implicit sourceInfo: SourceInfo): Self =
+    unop(sourceInfo, UInt(width = width), BitNotOp).asInstanceOf[Self]
 
   // REVIEW TODO: Can this be defined on Bits?
-  def orR(): Bool = macro SourceInfoTransform.noArg
-  def andR(): Bool = macro SourceInfoTransform.noArg
-  def xorR(): Bool = macro SourceInfoTransform.noArg
+  final def orR(): Bool = macro SourceInfoTransform.noArg
+  final def andR(): Bool = macro SourceInfoTransform.noArg
+  final def xorR(): Bool = macro SourceInfoTransform.noArg
 
   def do_orR(implicit sourceInfo: SourceInfo): Bool = this != UInt(0)
   def do_andR(implicit sourceInfo: SourceInfo): Bool = ~this === UInt(0)
@@ -426,48 +435,41 @@ sealed class UInt private[Chisel] (dir: Direction, width: Width, lit: Option[ULi
   override def do_<= (that: UInt)(implicit sourceInfo: SourceInfo): Bool = compop(sourceInfo, LessEqOp, that)
   override def do_>= (that: UInt)(implicit sourceInfo: SourceInfo): Bool = compop(sourceInfo, GreaterEqOp, that)
 
-  def != (that: UInt): Bool = macro SourceInfoTransform.thatArg
-  def =/= (that: UInt): Bool = macro SourceInfoTransform.thatArg
-  def === (that: UInt): Bool = macro SourceInfoTransform.thatArg
+  final def != (that: UInt): Bool = macro SourceInfoTransform.thatArg
+  final def =/= (that: UInt): Bool = macro SourceInfoTransform.thatArg
+  final def === (that: UInt): Bool = macro SourceInfoTransform.thatArg
 
   def do_!= (that: UInt)(implicit sourceInfo: SourceInfo): Bool = compop(sourceInfo, NotEqualOp, that)
   def do_=/= (that: UInt)(implicit sourceInfo: SourceInfo): Bool = compop(sourceInfo, NotEqualOp, that)
   def do_=== (that: UInt)(implicit sourceInfo: SourceInfo): Bool = compop(sourceInfo, EqualOp, that)
 
-  def unary_! () : Bool = macro SourceInfoTransform.noArg
+  final def unary_! () : Bool = macro SourceInfoTransform.noArg
 
   def do_unary_! (implicit sourceInfo: SourceInfo) : Bool = this === Bits(0)
 
-  // REVIEW TODO: Can these also not be defined on Bits?
-  override def << (that: BigInt): UInt = macro SourceInfoTransform.thatArg
-  override def << (that: Int): UInt = macro SourceInfoTransform.thatArg
-  override def << (that: UInt): UInt = macro SourceInfoTransform.thatArg
-  override def >> (that: BigInt): UInt = macro SourceInfoTransform.thatArg
-  override def >> (that: Int): UInt = macro SourceInfoTransform.thatArg
-  override def >> (that: UInt): UInt = macro SourceInfoTransform.thatArg
-
-  override def do_<< (that: Int)(implicit sourceInfo: SourceInfo): UInt =
-    binop(sourceInfo, UInt(this.width + that), ShiftLeftOp, that)
-  override def do_<< (that: BigInt)(implicit sourceInfo: SourceInfo): UInt =
+  override def do_<< (that: Int)(implicit sourceInfo: SourceInfo): Self =
+    binop(sourceInfo, UInt(this.width + that), ShiftLeftOp, that).asInstanceOf[Self]
+  override def do_<< (that: BigInt)(implicit sourceInfo: SourceInfo): Self =
     this << that.toInt
-  override def do_<< (that: UInt)(implicit sourceInfo: SourceInfo): UInt =
-    binop(sourceInfo, UInt(this.width.dynamicShiftLeft(that.width)), DynamicShiftLeftOp, that)
-  override def do_>> (that: Int)(implicit sourceInfo: SourceInfo): UInt =
-    binop(sourceInfo, UInt(this.width.shiftRight(that)), ShiftRightOp, that)
-  override def do_>> (that: BigInt)(implicit sourceInfo: SourceInfo): UInt =
+  override def do_<< (that: UInt)(implicit sourceInfo: SourceInfo): Self =
+    binop(sourceInfo, UInt(this.width.dynamicShiftLeft(that.width)), DynamicShiftLeftOp, that).asInstanceOf[Self]
+  override def do_>> (that: Int)(implicit sourceInfo: SourceInfo): Self =
+    binop(sourceInfo, UInt(this.width.shiftRight(that)), ShiftRightOp, that).asInstanceOf[Self]
+  override def do_>> (that: BigInt)(implicit sourceInfo: SourceInfo): Self =
     this >> that.toInt
-  override def do_>> (that: UInt)(implicit sourceInfo: SourceInfo): UInt =
-    binop(sourceInfo, UInt(this.width), DynamicShiftRightOp, that)
+  override def do_>> (that: UInt)(implicit sourceInfo: SourceInfo): Self =
+    binop(sourceInfo, UInt(this.width), DynamicShiftRightOp, that).asInstanceOf[Self]
 
-  def bitSet(off: UInt, dat: Bool): UInt = macro UIntTransform.bitset
+  final def bitSet(off: UInt, dat: Bool): UInt = macro UIntTransform.bitset
+
   def do_bitSet(off: UInt, dat: Bool)(implicit sourceInfo: SourceInfo): UInt = {
     val bit = UInt(1, 1) << off
     Mux(dat, this | bit, ~(~this | bit))
   }
 
-  def === (that: BitPat): Bool = macro SourceInfoTransform.thatArg
-  def != (that: BitPat): Bool = macro SourceInfoTransform.thatArg
-  def =/= (that: BitPat): Bool = macro SourceInfoTransform.thatArg
+  final def === (that: BitPat): Bool = macro SourceInfoTransform.thatArg
+  final def != (that: BitPat): Bool = macro SourceInfoTransform.thatArg
+  final def =/= (that: BitPat): Bool = macro SourceInfoTransform.thatArg
 
   def do_=== (that: BitPat)(implicit sourceInfo: SourceInfo): Bool = that === this
   def do_!= (that: BitPat)(implicit sourceInfo: SourceInfo): Bool = that != this
@@ -477,7 +479,7 @@ sealed class UInt private[Chisel] (dir: Direction, width: Width, lit: Option[ULi
     */
   // TODO: this eventually will be renamed as toSInt, once the existing toSInt
   // completes its deprecation phase.
-  def zext(): SInt = macro SourceInfoTransform.noArg
+  final def zext(): SInt = macro SourceInfoTransform.noArg
   def do_zext(implicit sourceInfo: SourceInfo): SInt =
     pushOp(DefPrim(sourceInfo, SInt(width + 1), ConvertOp, ref))
 
@@ -544,6 +546,8 @@ object UInt extends UIntFactory
 
 sealed class SInt private (dir: Direction, width: Width, lit: Option[SLit] = None)
     extends Bits(dir, width, lit) with Num[SInt] {
+  type Self <: SInt
+
   private[Chisel] override def cloneTypeWidth(w: Width): this.type =
     new SInt(dir, w).asInstanceOf[this.type]
   private[Chisel] def toType = s"SInt$width"
@@ -556,8 +560,8 @@ sealed class SInt private (dir: Direction, width: Width, lit: Option[SLit] = Non
   override private[Chisel] def fromInt(value: BigInt, width: Int): this.type =
     SInt(value, width).asInstanceOf[this.type]
 
-  def unary_- (): SInt = macro SourceInfoTransform.noArg
-  def unary_-% (): SInt = macro SourceInfoTransform.noArg
+  final def unary_- (): SInt = macro SourceInfoTransform.noArg
+  final def unary_-% (): SInt = macro SourceInfoTransform.noArg
 
   def unary_- (implicit sourceInfo: SourceInfo): SInt = SInt(0) - this
   def unary_-% (implicit sourceInfo: SourceInfo): SInt = SInt(0) -% this
@@ -575,18 +579,18 @@ sealed class SInt private (dir: Direction, width: Width, lit: Option[SLit] = Non
   override def do_% (that: SInt)(implicit sourceInfo: SourceInfo): SInt =
     binop(sourceInfo, SInt(this.width), RemOp, that)
 
-  def * (that: UInt): SInt = macro SourceInfoTransform.thatArg
+  final def * (that: UInt): SInt = macro SourceInfoTransform.thatArg
   def do_* (that: UInt)(implicit sourceInfo: SourceInfo): SInt =
     binop(sourceInfo, SInt(this.width + that.width), TimesOp, that)
 
   /** add (width +1) operator */
-  def +& (that: SInt): SInt = macro SourceInfoTransform.thatArg
+  final def +& (that: SInt): SInt = macro SourceInfoTransform.thatArg
   /** add (no growth) operator */
-  def +% (that: SInt): SInt = macro SourceInfoTransform.thatArg
+  final def +% (that: SInt): SInt = macro SourceInfoTransform.thatArg
   /** subtract (width +1) operator */
-  def -& (that: SInt): SInt = macro SourceInfoTransform.thatArg
+  final def -& (that: SInt): SInt = macro SourceInfoTransform.thatArg
   /** subtract (no growth) operator */
-  def -% (that: SInt): SInt = macro SourceInfoTransform.thatArg
+  final def -% (that: SInt): SInt = macro SourceInfoTransform.thatArg
 
   def do_+& (that: SInt)(implicit sourceInfo: SourceInfo): SInt =
     binop(sourceInfo, SInt((this.width max that.width) + 1), AddOp, that)
@@ -597,9 +601,9 @@ sealed class SInt private (dir: Direction, width: Width, lit: Option[SLit] = Non
   def do_-% (that: SInt)(implicit sourceInfo: SourceInfo): SInt =
     (this -& that).tail(1).asSInt
 
-  def & (that: SInt): SInt = macro SourceInfoTransform.thatArg
-  def | (that: SInt): SInt = macro SourceInfoTransform.thatArg
-  def ^ (that: SInt): SInt = macro SourceInfoTransform.thatArg
+  final def & (that: SInt): SInt = macro SourceInfoTransform.thatArg
+  final def | (that: SInt): SInt = macro SourceInfoTransform.thatArg
+  final def ^ (that: SInt): SInt = macro SourceInfoTransform.thatArg
 
   def do_& (that: SInt)(implicit sourceInfo: SourceInfo): SInt =
     binop(sourceInfo, UInt(this.width max that.width), BitAndOp, that).asSInt
@@ -609,45 +613,38 @@ sealed class SInt private (dir: Direction, width: Width, lit: Option[SLit] = Non
     binop(sourceInfo, UInt(this.width max that.width), BitXorOp, that).asSInt
 
   /** Returns this wire bitwise-inverted. */
-  def unary_~ (): SInt = macro SourceInfoTransform.noArg
-
-  def do_unary_~ (implicit sourceInfo: SourceInfo): SInt = unop(sourceInfo, UInt(width = width), BitNotOp).asSInt
+  def do_unary_~ (implicit sourceInfo: SourceInfo): Self =
+    unop(sourceInfo, UInt(width = width), BitNotOp).asSInt.asInstanceOf[Self]
 
   override def do_< (that: SInt)(implicit sourceInfo: SourceInfo): Bool = compop(sourceInfo, LessOp, that)
   override def do_> (that: SInt)(implicit sourceInfo: SourceInfo): Bool = compop(sourceInfo, GreaterOp, that)
   override def do_<= (that: SInt)(implicit sourceInfo: SourceInfo): Bool = compop(sourceInfo, LessEqOp, that)
   override def do_>= (that: SInt)(implicit sourceInfo: SourceInfo): Bool = compop(sourceInfo, GreaterEqOp, that)
 
-  def != (that: SInt): Bool = macro SourceInfoTransform.thatArg
-  def =/= (that: SInt): Bool = macro SourceInfoTransform.thatArg
-  def === (that: SInt): Bool = macro SourceInfoTransform.thatArg
+  final def != (that: SInt): Bool = macro SourceInfoTransform.thatArg
+  final def =/= (that: SInt): Bool = macro SourceInfoTransform.thatArg
+  final def === (that: SInt): Bool = macro SourceInfoTransform.thatArg
 
   def do_!= (that: SInt)(implicit sourceInfo: SourceInfo): Bool = compop(sourceInfo, NotEqualOp, that)
   def do_=/= (that: SInt)(implicit sourceInfo: SourceInfo): Bool = compop(sourceInfo, NotEqualOp, that)
   def do_=== (that: SInt)(implicit sourceInfo: SourceInfo): Bool = compop(sourceInfo, EqualOp, that)
 
-  def abs(): UInt = macro SourceInfoTransform.noArg
+  final def abs(): UInt = macro SourceInfoTransform.noArg
+
   def do_abs(implicit sourceInfo: SourceInfo): UInt = Mux(this < SInt(0), (-this).asUInt, this.asUInt)
 
-  override def << (that: BigInt): SInt = macro SourceInfoTransform.thatArg
-  override def << (that: Int): SInt = macro SourceInfoTransform.thatArg
-  override def << (that: UInt): SInt = macro SourceInfoTransform.thatArg
-  override def >> (that: BigInt): SInt = macro SourceInfoTransform.thatArg
-  override def >> (that: Int): SInt = macro SourceInfoTransform.thatArg
-  override def >> (that: UInt): SInt = macro SourceInfoTransform.thatArg
-
-  override def do_<< (that: Int)(implicit sourceInfo: SourceInfo): SInt =
-    binop(sourceInfo, SInt(this.width + that), ShiftLeftOp, that)
-  override def do_<< (that: BigInt)(implicit sourceInfo: SourceInfo): SInt =
+  override def do_<< (that: Int)(implicit sourceInfo: SourceInfo): Self =
+    binop(sourceInfo, SInt(this.width + that), ShiftLeftOp, that).asInstanceOf[Self]
+  override def do_<< (that: BigInt)(implicit sourceInfo: SourceInfo): Self =
     this << that.toInt
-  override def do_<< (that: UInt)(implicit sourceInfo: SourceInfo): SInt =
-    binop(sourceInfo, SInt(this.width.dynamicShiftLeft(that.width)), DynamicShiftLeftOp, that)
-  override def do_>> (that: Int)(implicit sourceInfo: SourceInfo): SInt =
-    binop(sourceInfo, SInt(this.width.shiftRight(that)), ShiftRightOp, that)
-  override def do_>> (that: BigInt)(implicit sourceInfo: SourceInfo): SInt =
+  override def do_<< (that: UInt)(implicit sourceInfo: SourceInfo): Self =
+    binop(sourceInfo, SInt(this.width.dynamicShiftLeft(that.width)), DynamicShiftLeftOp, that).asInstanceOf[Self]
+  override def do_>> (that: Int)(implicit sourceInfo: SourceInfo): Self =
+    binop(sourceInfo, SInt(this.width.shiftRight(that)), ShiftRightOp, that).asInstanceOf[Self]
+  override def do_>> (that: BigInt)(implicit sourceInfo: SourceInfo): Self =
     this >> that.toInt
-  override def do_>> (that: UInt)(implicit sourceInfo: SourceInfo): SInt =
-    binop(sourceInfo, SInt(this.width), DynamicShiftRightOp, that)
+  override def do_>> (that: UInt)(implicit sourceInfo: SourceInfo): Self =
+    binop(sourceInfo, SInt(this.width), DynamicShiftRightOp, that).asInstanceOf[Self]
 
   override def do_asUInt(implicit sourceInfo: SourceInfo): UInt = pushOp(DefPrim(sourceInfo, UInt(this.width), AsUIntOp, ref))
   override def do_asSInt(implicit sourceInfo: SourceInfo): SInt = this
@@ -682,6 +679,8 @@ object SInt {
 /** A data type for booleans, defined as a single bit indicating true or false.
   */
 sealed class Bool(dir: Direction, lit: Option[ULit] = None) extends UInt(dir, Width(1), lit) {
+  type Self <: Bool
+
   private[Chisel] override def cloneTypeWidth(w: Width): this.type = {
     require(!w.known || w.get == 1)
     new Bool(dir).asInstanceOf[this.type]
@@ -694,9 +693,9 @@ sealed class Bool(dir: Direction, lit: Option[ULit] = None) extends UInt(dir, Wi
 
   // REVIEW TODO: Why does this need to exist and have different conventions
   // than Bits?
-  def & (that: Bool): Bool = macro SourceInfoTransform.thatArg
-  def | (that: Bool): Bool = macro SourceInfoTransform.thatArg
-  def ^ (that: Bool): Bool = macro SourceInfoTransform.thatArg
+  final def & (that: Bool): Bool = macro SourceInfoTransform.thatArg
+  final def | (that: Bool): Bool = macro SourceInfoTransform.thatArg
+  final def ^ (that: Bool): Bool = macro SourceInfoTransform.thatArg
 
   def do_& (that: Bool)(implicit sourceInfo: SourceInfo): Bool =
     binop(sourceInfo, Bool(), BitAndOp, that)
@@ -706,9 +705,8 @@ sealed class Bool(dir: Direction, lit: Option[ULit] = None) extends UInt(dir, Wi
     binop(sourceInfo, Bool(), BitXorOp, that)
 
   /** Returns this wire bitwise-inverted. */
-  override def unary_~ (): Bool = macro SourceInfoTransform.noArg
-
-  override def do_unary_~ (implicit sourceInfo: SourceInfo): Bool = unop(sourceInfo, Bool(), BitNotOp)
+  override def do_unary_~ (implicit sourceInfo: SourceInfo): Self =
+    unop(sourceInfo, Bool(), BitNotOp).asInstanceOf[Self]
 
   /** Outputs the logical OR of two Bools.
    */
