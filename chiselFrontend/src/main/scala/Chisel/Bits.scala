@@ -218,9 +218,9 @@ sealed abstract class Bits(dirArg: Direction, width: Width, override val litArg:
   def do_asBits(implicit sourceInfo: SourceInfo): Bits = asUInt()
 
   @deprecated("Use asSInt, which makes the reinterpret cast more explicit", "chisel3")
-  final def toSInt(): SInt = do_asSInt(DeprecatedSourceInfo())
+  final def toSInt(): SInt = do_asSInt(DeprecatedSourceInfo)
   @deprecated("Use asUInt, which makes the reinterpret cast more explicit", "chisel3")
-  final def toUInt(): UInt = do_asUInt(DeprecatedSourceInfo())
+  final def toUInt(): UInt = do_asUInt(DeprecatedSourceInfo)
 
   def toBool(): Bool = macro SourceInfoTransform.noArg
 
@@ -244,7 +244,7 @@ sealed abstract class Bits(dirArg: Direction, width: Width, override val litArg:
   }
 
   @deprecated("Use asBits, which makes the reinterpret cast more explicit and actually returns Bits", "chisel3")
-  override def toBits: UInt = do_asUInt(DeprecatedSourceInfo())
+  override def toBits: UInt = do_asUInt(DeprecatedSourceInfo)
 
   override def do_fromBits(that: Bits)(implicit sourceInfo: SourceInfo): this.type = {
     val res = Wire(this, null).asInstanceOf[this.type]

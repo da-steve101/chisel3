@@ -24,7 +24,7 @@ object Module {
   def do_apply[T <: Module](bc: => T)(implicit sourceInfo: SourceInfo): T = {
     // Don't generate source info referencing parents inside a module, sincce this interferes with
     // module de-duplication in FIRRTL emission.
-    val childSourceInfo = UnlocatableSourceInfo()
+    val childSourceInfo = UnlocatableSourceInfo
 
     val parent = dynamicContext.currentModule
     val m = bc.setRefs()

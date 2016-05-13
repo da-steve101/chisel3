@@ -157,7 +157,7 @@ sealed class Vec[T <: Data] private (gen: => T, val length: Int)
   def read(idx: UInt): T = apply(idx)
 
   @deprecated("Use Vec.apply instead", "chisel3")
-  def write(idx: UInt, data: T): Unit = (apply(idx) := data)(DeprecatedSourceInfo())
+  def write(idx: UInt, data: T): Unit = (apply(idx) := data)(DeprecatedSourceInfo)
 
   override def cloneType: this.type =
     Vec(length, gen).asInstanceOf[this.type]

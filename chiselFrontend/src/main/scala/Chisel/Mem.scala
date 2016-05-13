@@ -11,7 +11,7 @@ import internal.sourceinfo.{SourceInfo, DeprecatedSourceInfo, UnlocatableSourceI
 
 object Mem {
   @deprecated("Mem argument order should be size, t; this will be removed by the official release", "chisel3")
-  def apply[T <: Data](t: T, size: Int): Mem[T] = do_apply(size, t)(UnlocatableSourceInfo())
+  def apply[T <: Data](t: T, size: Int): Mem[T] = do_apply(size, t)(UnlocatableSourceInfo)
 
   /** Creates a combinational-read, sequential-write [[Mem]].
     *
@@ -31,12 +31,6 @@ object Mem {
 sealed abstract class MemBase[T <: Data](t: T, val length: Int) extends HasId with VecLike[T] {
   // REVIEW TODO: make accessors (static/dynamic, read/write) combinations consistent.
 
-  // Source locators not available for reads because macros cannot implement abstract methods, the
-  // workarounds are unsafe, and they return a data type that could be chained with apply
-  // (preventing the use of an implicit SourceInfo).
-  // The base class also defines the write functions without an implicit argument, so this class
-  // can't define those functions to also take an implicit sourceInfo.
-
   /** Creates a read accessor into the memory with static addressing. See the
     * class documentation of the memory for more detailed information.
     */
@@ -45,12 +39,12 @@ sealed abstract class MemBase[T <: Data](t: T, val length: Int) extends HasId wi
   /** Creates a read/write accessor into the memory with dynamic addressing.
     * See the class documentation of the memory for more detailed information.
     */
-  def apply(idx: UInt): T = makePort(UnlocatableSourceInfo(), idx, MemPortDirection.INFER)
+  def apply(idx: UInt): T = makePort(UnlocatableSourceInfo, idx, MemPortDirection.INFER)
 
   /** Creates a read accessor into the memory with dynamic addressing. See the
     * class documentation of the memory for more detailed information.
     */
-  def read(idx: UInt): T = makePort(UnlocatableSourceInfo(), idx, MemPortDirection.READ)
+  def read(idx: UInt): T = makePort(UnlocatableSourceInfo, idx, MemPortDirection.READ)
 
   /** Creates a write accessor into the memory.
     *
@@ -58,8 +52,8 @@ sealed abstract class MemBase[T <: Data](t: T, val length: Int) extends HasId wi
     * @param data new data to write
     */
   def write(idx: UInt, data: T): Unit = {
-    implicit val sourceInfo = UnlocatableSourceInfo()
-    makePort(UnlocatableSourceInfo(), idx, MemPortDirection.WRITE) := data
+    implicit val sourceInfo = UnlocatableSourceInfo
+    makePort(UnlocatableSourceInfo, idx, MemPortDirection.WRITE) := data
   }
 
   /** Creates a masked write accessor into the memory.
@@ -72,7 +66,7 @@ sealed abstract class MemBase[T <: Data](t: T, val length: Int) extends HasId wi
     * @note this is only allowed if the memory's element data type is a Vec
     */
   def write(idx: UInt, data: T, mask: Seq[Bool]) (implicit evidence: T <:< Vec[_]): Unit = {
-    implicit val sourceInfo = UnlocatableSourceInfo()
+    implicit val sourceInfo = UnlocatableSourceInfo
     val accessor = makePort(sourceInfo, idx, MemPortDirection.WRITE).asInstanceOf[Vec[Data]]
     val dataVec = data.asInstanceOf[Vec[Data]]
     if (accessor.length != dataVec.length) {
@@ -103,7 +97,7 @@ sealed class Mem[T <: Data](t: T, length: Int) extends MemBase(t, length)
 
 object SeqMem {
   @deprecated("SeqMem argument order should be size, t; this will be removed by the official release", "chisel3")
-  def apply[T <: Data](t: T, size: Int): SeqMem[T] = do_apply(size, t)(DeprecatedSourceInfo())
+  def apply[T <: Data](t: T, size: Int): SeqMem[T] = do_apply(size, t)(DeprecatedSourceInfo)
 
   /** Creates a sequential-read, sequential-write [[SeqMem]].
     *
@@ -132,7 +126,7 @@ object SeqMem {
   */
 sealed class SeqMem[T <: Data](t: T, n: Int) extends MemBase[T](t, n) {
   def read(addr: UInt, enable: Bool): T = {
-    implicit val sourceInfo = UnlocatableSourceInfo()
+    implicit val sourceInfo = UnlocatableSourceInfo
     val a = Wire(UInt())
     when (enable) { a := addr }
     read(a)

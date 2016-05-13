@@ -118,7 +118,7 @@ abstract class Data(dirArg: Direction) extends HasId {
     * This performs the inverse operation of fromBits(Bits).
     */
   @deprecated("Use asBits, which makes the reinterpret cast more explicit and actually returns Bits", "chisel3")
-  def toBits(): UInt = SeqUtils.do_asUInt(this.flatten)(DeprecatedSourceInfo())
+  def toBits(): UInt = SeqUtils.do_asUInt(this.flatten)(DeprecatedSourceInfo)
 }
 
 object Wire {
@@ -126,11 +126,11 @@ object Wire {
 
   // No source info since Scala macros don't yet support named / default arguments.
   def apply[T <: Data](dummy: Int = 0, init: T): T =
-    do_apply(null.asInstanceOf[T], init)(UnlocatableSourceInfo())
+    do_apply(null.asInstanceOf[T], init)(UnlocatableSourceInfo)
 
   // No source info since Scala macros don't yet support named / default arguments.
   def apply[T <: Data](t: T, init: T): T =
-    do_apply(t, init)(UnlocatableSourceInfo())
+    do_apply(t, init)(UnlocatableSourceInfo)
 
   def do_apply[T <: Data](t: T, init: T)(implicit sourceInfo: SourceInfo): T = {
     val x = Reg.makeType(t, null.asInstanceOf[T], init)

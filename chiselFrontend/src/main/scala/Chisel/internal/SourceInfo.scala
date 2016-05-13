@@ -21,16 +21,16 @@ import scala.reflect.macros.blackbox.Context
   */
 sealed trait SourceInfo
 
-class NoSourceInfo() extends SourceInfo
+sealed trait NoSourceInfo extends SourceInfo
 
 /** For when source info can't be generated because of a technical limitation, like for Reg because
   * Scala macros don't support named or default arguments.
   */
-case class UnlocatableSourceInfo() extends NoSourceInfo
+case object UnlocatableSourceInfo extends NoSourceInfo
 
 /** For when source info isn't generated because the function is deprecated and we're lazy.
   */
-case class DeprecatedSourceInfo() extends NoSourceInfo
+case object DeprecatedSourceInfo extends NoSourceInfo
 
 /** For FIRRTL lines from a Scala source line.
   */

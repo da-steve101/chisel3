@@ -39,7 +39,7 @@ object Reg {
     */
   def apply[T <: Data](t: T = null, next: T = null, init: T = null): T =
     // Scala macros can't (yet) handle named or default arguments.
-    do_apply(t, next, init)(UnlocatableSourceInfo())
+    do_apply(t, next, init)(UnlocatableSourceInfo)
 
   /** Creates a register without initialization (reset is ignored). Value does
     * not change unless assigned to (using the := operator).
