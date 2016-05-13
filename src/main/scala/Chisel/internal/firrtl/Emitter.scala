@@ -40,7 +40,7 @@ private class Emitter(circuit: Circuit) {
         s"skip"
     }
     e.sourceInfo match {
-      case line: SourceLine => s"${firrtlLine} @[${line.filename} ${line.line}:${line.col}] "
+      case SourceLine(filename, line, col) => s"${firrtlLine} @[${filename} ${line}:${col}] "
       case _: NoSourceInfo => firrtlLine
     }
   }
