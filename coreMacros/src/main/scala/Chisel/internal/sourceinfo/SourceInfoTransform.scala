@@ -111,10 +111,9 @@ class SourceInfoTransform(val c: Context) extends SourceInfoTransformMacro {
     */
   def doFuncTerm = {
     val funcName = c.macroApplication match {
-      case Apply(TypeApply(Select(_, TermName(funcName)), _), _) => funcName
-      case Apply(Select(_, TermName(funcName)), _) => funcName
-      case Select(_, TermName(funcName)) => funcName
-
+      case q"$_.$funcName(..$_)" => funcName
+      case q"$_.$funcName[$_](..$_)" => funcName
+      case q"$_.$funcName" => funcName
     }
     TermName("do_" + funcName)
   }
