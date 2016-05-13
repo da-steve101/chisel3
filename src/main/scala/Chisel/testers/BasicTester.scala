@@ -8,7 +8,7 @@ import scala.language.experimental.macros
 import internal._
 import internal.Builder.pushCommand
 import internal.firrtl._
-import internal.sourceinfo.{SourceInfo, StopTransform}
+import internal.sourceinfo.SourceInfo
 
 class BasicTester extends Module {
   // The testbench has no IOs, rather it should communicate using printf, assert, and stop.
@@ -22,9 +22,7 @@ class BasicTester extends Module {
     * reset). If your definition of reset is not the encapsulating Module's
     * reset, you will need to gate this externally.
     */
-  def stop(): Unit = macro StopTransform.stop
-
-  def do_stop(implicit sourceInfo: SourceInfo) {
+  def stop()(implicit sourceInfo: SourceInfo) {
     // TODO: rewrite this using library-style SourceInfo passing.
     when.do_apply(!reset, {
       pushCommand(Stop(sourceInfo, Node(clock), 0))

@@ -7,7 +7,7 @@ import scala.language.experimental.macros
 import internal._
 import internal.Builder.pushCommand
 import internal.firrtl._
-import internal.sourceinfo.{SourceInfo, PrintTransform}
+import internal.sourceinfo.SourceInfo
 
 object printf { // scalastyle:ignore object.name
   /** Prints a message in simulation.
@@ -23,9 +23,7 @@ object printf { // scalastyle:ignore object.name
     * @param fmt printf format string
     * @param data format string varargs containing data to print
     */
-  def apply(fmt: String, data: Bits*): Unit = macro PrintTransform.apply
-
-  def do_apply(fmt: String, data: Bits*)(implicit sourceInfo: SourceInfo) {
+  def apply(fmt: String, data: Bits*)(implicit sourceInfo: SourceInfo) {
     when (!(Builder.dynamicContext.currentModule.get.reset)) {
       printfWithoutReset(fmt, data:_*)
     }

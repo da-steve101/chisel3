@@ -8,7 +8,7 @@ import scala.language.experimental.macros
 import internal._
 import internal.Builder.pushCommand
 import internal.firrtl._
-import internal.sourceinfo.{SourceInfo, AssertTransform}
+import internal.sourceinfo.SourceInfo
 
 object assert { // scalastyle:ignore object.name
   /** Checks for a condition to be valid in the circuit at all times. If the
@@ -30,11 +30,8 @@ object assert { // scalastyle:ignore object.name
     * that
     */
   // Macros currently can't take default arguments, so we need two functions to emulate defaults.
-  def apply(cond: Bool, message: String): Unit = macro AssertTransform.apply_msg
-  def apply(cond: Bool): Unit = macro AssertTransform.apply
-
-  def do_apply(cond: Bool, message: String)(sourceInfo: SourceInfo): Unit = macro apply_impl_msg
-  def do_apply(cond: Bool)(sourceInfo: SourceInfo): Unit = macro apply_impl
+  def apply(cond: Bool, message: String)(implicit sourceInfo: SourceInfo): Unit = macro apply_impl_msg
+  def apply(cond: Bool)(implicit sourceInfo: SourceInfo): Unit = macro apply_impl
 
   def apply_impl_msg(c: Context)(cond: c.Tree, message: c.Tree)(sourceInfo: c.Tree): c.Tree = {
     import c.universe._

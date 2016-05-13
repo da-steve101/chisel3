@@ -54,9 +54,7 @@ class WhenContext(sourceInfo: SourceInfo, cond: Bool, prevCond: => Bool, block: 
   /** This block of logic gets executed only if the above conditions were all
     * false. No additional logic blocks may be appended past the `otherwise`.
     */
-  def otherwise(block: => Unit): Unit = macro WhenTransform.otherwise
-
-  def do_otherwise(block: => Unit)(implicit sourceInfo: SourceInfo): Unit =
+  def otherwise(block: => Unit)(implicit sourceInfo: SourceInfo): Unit =
     new WhenContext(sourceInfo, prevCond, null, block)
 
   pushCommand(WhenBegin(sourceInfo, cond.ref))

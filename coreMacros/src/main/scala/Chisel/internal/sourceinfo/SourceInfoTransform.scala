@@ -72,34 +72,6 @@ class WhenTransform(val c: Context) extends SourceInfoTransformMacro {
   def elsewhen(elseCond: c.Tree)(block: c.Tree): c.Tree = {
     q"$thisObj.do_elsewhen($elseCond, $block)($implicitSourceInfo)"
   }
-
-  def otherwise(block: c.Tree): c.Tree = {
-    q"$thisObj.do_otherwise($block)($implicitSourceInfo)"
-  }
-}
-
-class StopTransform(val c: Context) extends SourceInfoTransformMacro {
-  import c.universe._
-  def stop(): c.Tree = {
-    q"$thisObj.do_stop($implicitSourceInfo)"
-  }
-}
-
-class PrintTransform(val c: Context) extends SourceInfoTransformMacro {
-  import c.universe._
-  def apply(fmt: c.Tree, data: c.Tree*): c.Tree = {
-    q"$thisObj.do_apply($fmt, ..$data)($implicitSourceInfo)"
-  }
-}
-
-class AssertTransform(val c: Context) extends SourceInfoTransformMacro {
-  import c.universe._
-  def apply_msg(cond: c.Tree, message: c.Tree): c.Tree = {
-    q"$thisObj.do_apply($cond, $message)($implicitSourceInfo)"
-  }
-  def apply(cond: c.Tree): c.Tree = {
-    q"$thisObj.do_apply($cond)($implicitSourceInfo)"
-  }
 }
 
 class MuxTransform(val c: Context) extends SourceInfoTransformMacro {
