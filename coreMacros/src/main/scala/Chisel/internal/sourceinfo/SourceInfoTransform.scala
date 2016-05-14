@@ -111,9 +111,8 @@ class SourceInfoTransform(val c: Context) extends SourceInfoTransformMacro {
     */
   def doFuncTerm = {
     val funcName = c.macroApplication match {
-      case q"$_.$funcName(..$_)" => funcName
-      case q"$_.$funcName[$_](..$_)" => funcName
-      case q"$_.$funcName" => funcName
+      case q"$_.$funcName[..$_](...$_)" => funcName
+      case _ => throw new Exception(s"Chisel Internal Error: Could not resolve function name from macro application: ${showCode(c.macroApplication)}")
     }
     TermName("do_" + funcName)
   }
