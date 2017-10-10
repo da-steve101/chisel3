@@ -1,6 +1,6 @@
 // See LICENSE for license details.
 
-package chisel3.util
+package binconcifar
 
 import chisel3._
 
@@ -62,7 +62,7 @@ class MemShiftRegister[T <: Data]( genType : T, n : Int ) extends Module {
   if ( n <= 2 ) {
     io.out := ShiftRegister( io.in, n, io.en )
   } else {
-    val myMem = SyncReadMem( n, genType.cloneType )
+    val myMem = Mem( n, genType.cloneType )
 
     val cntr = Counter( io.en, n )
     val readAddr = Wire( UInt( cntr._1.getWidth.W + 1.W ) )
@@ -73,9 +73,10 @@ class MemShiftRegister[T <: Data]( genType : T, n : Int ) extends Module {
     }
 
     when ( io.en ) {
-      myMem.write( cntr._1, io.in )
+      myMem( cntr._1 ) := io.in
     }
-    io.out := myMem.read( readAddr, io.en )
+    io.out := RegEnable( myMem( readAddr ), io.en )
     io.cntrWrap := cntr._2
   }
 }
+
